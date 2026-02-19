@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Country Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .search-box {
+            max-width: 400px;
+            margin: 20px auto;
+            display: flex;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px 0 0 8px;
+            outline: none;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+        }
+
+        .card {
+            max-width: 400px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .flag {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .info {
+            margin-top: 15px;
+        }
+
+        .info p {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+
+        .error {
+            color: red;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+<h2>🌍 Country Finder</h2>
+
+<div class="search-box">
+    <input type="text" id="countryInput" placeholder="Enter country name...">
+    <button onclick="searchCountry()">Search</button>
+</div>
+
+<p class="error" id="errorMsg"></p>
+
+<div class="card" id="countryCard">
+    <img id="flagImg" class="flag" src="">
+    <div class="info">
+        <p><strong>Name:</strong> <span id="name"></span></p>
+        <p><strong>Capital:</strong> <span id="capital"></span></p>
+        <p><strong>Region:</strong> <span id="region"></span></p>
+        <p><strong>Population:</strong> <span id="population"></span></p>
+    </div>
+</div>
+
+
+<h3 class="mt-5">Compare Two Countries</h3>
+
+<div class="row mt-3">
+    <div class="col-md-5">
+        <input id="cmp1" type="text" class="form-control" placeholder="Enter first country">
+    </div>
+
+    <div class="col-md-5">
+        <input id="cmp2" type="text" class="form-control" placeholder="Enter second country">
+    </div>
+
+    <div class="col-md-2">
+        <button onclick="compareCountries()" class="btn btn-warning w-100">Compare</button>
+    </div>
+</div>
+
+<div id="compareResult" class="mt-4"></div>
+
+
+<script>
+    function searchCountry() {
+        const name = document.getElementById("countryInput").value.trim();
+        const card = document.getElementById("countryCard");
+        const error = document.getElementById("errorMsg");
+
+        if (name === "") {
+            error.textContent = "Please enter a country name.";
+            return;
+        }
+
+        error.textContent = "";
+
+        fetch(`http://localhost:8080/api/countries/${name}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!Array.isArray(data)) {
+                    error.textContent = "Country not found.";
+                    card.style.display = "none";
+                    return;
+                }
+
+                const c = data[0];
+
+                document.getElementById("flagImg").src = c.flags.png;
+                document.getElementById("name").textContent = c.name.common;
+                document.getElementById("capital").textContent = c.capital ? c.capital[0] : "N/A";
+                document.getElementById("region").textContent = c.region;
+                document.getElementById("population").textContent = c.population.toLocaleString();
+
+                card.style.display = "block";
+            })
+            .catch(() => {
+                error.textContent = "Failed to fetch data.";
+                card.style.display = "none";
+            });
+    }
+</script>
+
+
+
+<script>
+function compareCountries() {
+    let c1 = document.getElementById("cmp1").value.trim();
+    let c2 = document.getElementById("cmp2").value.trim();
+
+    if (c1 === "" || c2 === "") {
+        alert("Please enter both countries!");
+        return;
+    }
+
+    fetch(`/api/countries/compare?c1=${c1}&c2=${c2}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("compareResult").innerHTML = `
+                <div class="row">
+
+                    <div class="col-md-6">
+                        <div class="card p-3 shadow-sm">
+                            <h4>${data.country1.name}</h4>
+                            <img src="${data.country1.flag}" width="150" class="mb-2">
+                            <p><strong>Capital:</strong> ${data.country1.capital}</p>
+                            <p><strong>Population:</strong> ${data.country1.population}</p>
+                            <p><strong>Region:</strong> ${data.country1.region}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card p-3 shadow-sm">
+                            <h4>${data.country2.name}</h4>
+                            <img src="${data.country2.flag}" width="150" class="mb-2">
+                            <p><strong>Capital:</strong> ${data.country2.capital}</p>
+                            <p><strong>Population:</strong> ${data.country2.population}</p>
+                            <p><strong>Region:</strong> ${data.country2.region}</p>
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        })
+        .catch(err => {
+            document.getElementById("compareResult").innerHTML =
+                `<p class="text-danger">Unable to compare countries.</p>`;
+        });
+}
+</script>
+
+
+</body>
+</html>
